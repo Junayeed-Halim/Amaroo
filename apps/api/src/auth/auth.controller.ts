@@ -29,7 +29,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  refresh(@Headers('x-refresh-token') refreshToken = '') {
+  refresh(@Body('refreshToken') refreshToken = '') {
     return this.authService.refresh(refreshToken);
   }
 
@@ -39,7 +39,7 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@Headers('x-user-phone') phone = '') {
-    return this.authService.me(phone);
+  me(@Headers('authorization') authorization = '') {
+    return this.authService.meFromAccessToken(authorization);
   }
 }

@@ -7,6 +7,7 @@ export class CheckoutItemDto {
 }
 
 export class CheckoutDto {
+  buyer_id!: string;
   items!: CheckoutItemDto[];
   delivery_address_id!: string;
   payment_method!: PaymentMethod;

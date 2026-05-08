@@ -69,13 +69,14 @@ export class ProductsService {
 
   create(dto: CreateProductDto) {
     const now = new Date().toISOString();
+    const slug = this.ensureUniqueSlug(this.slugify(dto.nameEn));
     const product: ProductEntity = {
       id: randomUUID(),
       sellerId: dto.sellerId,
       categoryId: dto.categoryId,
       nameEn: dto.nameEn,
       nameBn: dto.nameBn ?? null,
-      slug: this.slugify(dto.nameEn),
+      slug,
       descriptionEn: dto.descriptionEn ?? null,
       descriptionBn: dto.descriptionBn ?? null,
       basePrice: dto.basePrice,
@@ -98,7 +99,7 @@ export class ProductsService {
     const product = this.getById(id);
 
     if (dto.nameEn) {
-      product.slug = this.slugify(dto.nameEn);
+      product.slug = this.ensureUniqueSlug(this.slugify(dto.nameEn), id);
     }
 
     Object.assign(product, {
@@ -134,5 +135,22 @@ export class ProductsService {
       .replace(/[^\p{L}\p{N}\s-]/gu, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-');
+  }
+
+  private ensureUniqueSlug(baseSlug: string, excludingId?: string) {
+    const existingSlugs = new Set(
+      [...this.products.values()].filter((product) => product.id !== excludingId).map((product) => product.slug),
+    );
+
+    if (!existingSlugs.has(baseSlug)) {
+      return baseSlug;
+    }
+
+    let suffix = 2;
+    while (existingSlugs.has(`${baseSlug}-${suffix}`)) {
+      suffix += 1;
+    }
+
+    return `${baseSlug}-${suffix}`;
   }
 }

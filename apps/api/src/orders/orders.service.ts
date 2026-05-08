@@ -60,7 +60,7 @@ export class OrdersService {
     const order: OrderEntity = {
       id: randomUUID(),
       orderNumber: `ORD-${Date.now()}`,
-      buyerId: 'buyer-placeholder',
+      buyerId: dto.buyer_id,
       status: dto.payment_method === 'cod' ? 'confirmed' : 'pending',
       paymentMethod: dto.payment_method,
       paymentStatus: dto.payment_method === 'cod' ? 'unpaid' : 'pending',

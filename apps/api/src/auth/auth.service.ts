@@ -18,7 +18,15 @@ export class AuthService {
   private readonly users = new Map<string, UserEntity>();
   private readonly otpStore = new Map<string, { otp: string; expiresAt: number }>();
   private readonly otpRateLimit = new Map<string, number[]>();
-  private readonly jwtSecret = process.env.JWT_SECRET ?? 'dev-only-secret-change-in-production';
+  private readonly jwtSecret: string;
+
+  constructor() {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new Error('JWT_SECRET environment variable is required');
+    }
+    this.jwtSecret = secret;
+  }
 
   async register(dto: RegisterDto) {
     const now = new Date().toISOString();
@@ -108,6 +116,16 @@ export class AuthService {
 
   me(phone: string) {
     return this.users.get(phone) ?? null;
+  }
+
+  meFromAccessToken(accessToken: string) {
+    try {
+      const token = accessToken.replace(/^Bearer\s+/i, '');
+      const payload = verify(token, this.jwtSecret) as { sub: string };
+      return [...this.users.values()].find((user) => user.id === payload.sub) ?? null;
+    } catch {
+      throw new UnauthorizedException('Invalid access token');
+    }
   }
 
   private generateToken(userId: string, role: UserRole, expiry: '15m' | '30d') {
