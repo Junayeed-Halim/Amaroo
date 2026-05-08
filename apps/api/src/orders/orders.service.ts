@@ -20,7 +20,10 @@ export class OrdersService {
 
   checkout(dto: CheckoutDto) {
     const address = this.addresses.get(dto.delivery_address_id);
-    const district = address?.district ?? 'Dhaka';
+    if (!address) {
+      throw new NotFoundException('Delivery address not found');
+    }
+    const district = address.district;
 
     let subtotal = 0;
     const items: OrderItemEntity[] = dto.items.map((item) => {
@@ -30,6 +33,7 @@ export class OrdersService {
         throw new NotFoundException(`Insufficient stock for product ${product.id}`);
       }
 
+      // Note: replace with DB transaction + row-level locking in TypeORM for production.
       product.stockQuantity -= item.qty;
       const unitPrice = Number(product.salePrice ?? product.basePrice);
       const totalPrice = unitPrice * item.qty;
@@ -55,7 +59,7 @@ export class OrdersService {
 
     const order: OrderEntity = {
       id: randomUUID(),
-      orderNumber: `AMR-${Date.now()}`,
+      orderNumber: `ORD-${Date.now()}`,
       buyerId: 'buyer-placeholder',
       status: dto.payment_method === 'cod' ? 'confirmed' : 'pending',
       paymentMethod: dto.payment_method,

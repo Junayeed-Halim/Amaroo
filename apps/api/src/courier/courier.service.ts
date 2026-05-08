@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { CourierName, ShipmentEntity } from '../database/entities/shipment.entity';
 import { OrderEntity } from '../database/entities/order.entity';
 
@@ -8,7 +8,7 @@ export class CourierService {
   private readonly shipments = new Map<string, ShipmentEntity>();
 
   createShipment(order: OrderEntity, district: string, courier: CourierName = 'steadfast') {
-    const trackingId = `SFD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const trackingId = `SFD-${Date.now()}-${randomInt(100000, 999999)}`;
     const shipment: ShipmentEntity = {
       id: randomUUID(),
       orderId: order.id,

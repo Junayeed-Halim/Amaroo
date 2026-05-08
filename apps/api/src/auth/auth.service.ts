@@ -1,24 +1,33 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { createHash, randomInt, randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
+import { compare, hash } from 'bcrypt';
+import { sign, verify } from 'jsonwebtoken';
 import { UserEntity, UserRole } from '../database/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { OtpSendDto, OtpVerifyDto } from './dto/otp.dto';
 import { RegisterDto } from './dto/register.dto';
+
+const OTP_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const OTP_MAX_PER_WINDOW = 3;
+const OTP_TTL_MS = 5 * 60 * 1000;
+const ACCESS_TOKEN_EXPIRY = '15m';
+const REFRESH_TOKEN_EXPIRY = '30d';
 
 @Injectable()
 export class AuthService {
   private readonly users = new Map<string, UserEntity>();
   private readonly otpStore = new Map<string, { otp: string; expiresAt: number }>();
   private readonly otpRateLimit = new Map<string, number[]>();
+  private readonly jwtSecret = process.env.JWT_SECRET ?? 'dev-only-secret-change-in-production';
 
-  register(dto: RegisterDto) {
+  async register(dto: RegisterDto) {
     const now = new Date().toISOString();
     const user: UserEntity = {
       id: randomUUID(),
       name: dto.name,
       phone: dto.phone,
       email: dto.email ?? null,
-      passwordHash: this.hashPassword(dto.password),
+      passwordHash: await this.hashPassword(dto.password),
       role: 'buyer',
       avatarUrl: null,
       isVerified: false,
@@ -31,35 +40,35 @@ export class AuthService {
 
     return {
       user,
-      accessToken: this.generateToken(user.id, user.role, '15m'),
-      refreshToken: this.generateToken(user.id, user.role, '30d'),
+      accessToken: this.generateToken(user.id, user.role, ACCESS_TOKEN_EXPIRY),
+      refreshToken: this.generateToken(user.id, user.role, REFRESH_TOKEN_EXPIRY),
     };
   }
 
-  login(dto: LoginDto) {
+  async login(dto: LoginDto) {
     const user = this.users.get(dto.phone);
-    if (!user || user.passwordHash !== this.hashPassword(dto.password)) {
+    if (!user || !user.passwordHash || !(await compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid phone or password');
     }
 
     return {
-      accessToken: this.generateToken(user.id, user.role, '15m'),
-      refreshToken: this.generateToken(user.id, user.role, '30d'),
+      accessToken: this.generateToken(user.id, user.role, ACCESS_TOKEN_EXPIRY),
+      refreshToken: this.generateToken(user.id, user.role, REFRESH_TOKEN_EXPIRY),
       user,
     };
   }
 
   sendOtp(dto: OtpSendDto) {
     const now = Date.now();
-    const history = (this.otpRateLimit.get(dto.phone) ?? []).filter((value) => now - value < 60 * 60 * 1000);
-    if (history.length >= 3) {
+    const history = (this.otpRateLimit.get(dto.phone) ?? []).filter((value) => now - value < OTP_RATE_LIMIT_WINDOW_MS);
+    if (history.length >= OTP_MAX_PER_WINDOW) {
       throw new UnauthorizedException('OTP rate limit exceeded for this phone');
     }
 
     const otp = randomInt(100000, 999999).toString();
     history.push(now);
     this.otpRateLimit.set(dto.phone, history);
-    this.otpStore.set(dto.phone, { otp, expiresAt: now + 5 * 60 * 1000 });
+    this.otpStore.set(dto.phone, { otp, expiresAt: now + OTP_TTL_MS });
 
     return { phone: dto.phone, otpExpiresInSeconds: 300 };
   }
@@ -80,14 +89,21 @@ export class AuthService {
   }
 
   refresh(refreshToken: string) {
-    return {
-      accessToken: `${refreshToken}.access`,
-      expiresIn: '15m',
-    };
+    try {
+      const payload = verify(refreshToken, this.jwtSecret) as { sub: string; role: UserRole };
+      return {
+        accessToken: this.generateToken(payload.sub, payload.role, ACCESS_TOKEN_EXPIRY),
+        expiresIn: ACCESS_TOKEN_EXPIRY,
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   logout() {
-    return { success: true };
+    return {
+      success: true,
+    };
   }
 
   me(phone: string) {
@@ -95,10 +111,10 @@ export class AuthService {
   }
 
   private generateToken(userId: string, role: UserRole, expiry: '15m' | '30d') {
-    return Buffer.from(JSON.stringify({ sub: userId, role, exp: expiry, iat: Date.now() })).toString('base64url');
+    return sign({ sub: userId, role }, this.jwtSecret, { expiresIn: expiry });
   }
 
   private hashPassword(password: string) {
-    return createHash('sha256').update(password).digest('hex');
+    return hash(password, 12);
   }
 }
