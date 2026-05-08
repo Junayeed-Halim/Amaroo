@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Param, Post } from '@nestjs/common';
 import { CourierService } from './courier.service';
 
 @Controller('courier')
@@ -7,7 +7,11 @@ export class CourierController {
 
   @Get('shipments/:consignmentId')
   trackShipment(@Param('consignmentId') consignmentId: string) {
-    return this.courierService.trackShipment(consignmentId);
+    const shipment = this.courierService.trackShipment(consignmentId);
+    if (!shipment) {
+      throw new NotFoundException('Shipment not found');
+    }
+    return shipment;
   }
 
   @Post('shipments/track')

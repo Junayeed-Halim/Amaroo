@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AddressEntity } from '../database/entities/address.entity';
 import { OrderItemEntity } from '../database/entities/order-item.entity';
 import { OrderEntity } from '../database/entities/order.entity';
 import { CourierService } from '../courier/courier.service';
+import { PaymentsService } from '../payments/payments.service';
 import { ProductsService } from '../products/products.service';
+import { CreateAddressDto } from './dto/create-address.dto';
 import { CheckoutDto } from './dto/checkout.dto';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
   private readonly orders = new Map<string, OrderEntity>();
   private readonly orderItems = new Map<string, OrderItemEntity[]>();
   private readonly addresses = new Map<string, AddressEntity>();
@@ -16,9 +19,32 @@ export class OrdersService {
   constructor(
     private readonly productsService: ProductsService,
     private readonly courierService: CourierService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
+  createAddress(dto: CreateAddressDto) {
+    const address: AddressEntity = {
+      id: randomUUID(),
+      userId: dto.user_id,
+      label: dto.label ?? null,
+      recipientName: dto.recipient_name,
+      phone: dto.phone,
+      division: dto.division,
+      district: dto.district,
+      upazila: dto.upazila,
+      streetAddress: dto.street_address,
+      postalCode: dto.postal_code ?? null,
+      isDefault: dto.is_default ?? false,
+    };
+    this.addresses.set(address.id, address);
+    this.logger.log(`Address created ${address.id} for ${address.userId}`);
+    return address;
+  }
+
   checkout(dto: CheckoutDto) {
+    if (dto.items.length === 0) {
+      throw new BadRequestException('At least one checkout item is required');
+    }
     const address = this.addresses.get(dto.delivery_address_id);
     if (!address) {
       throw new NotFoundException('Delivery address not found');
@@ -81,11 +107,14 @@ export class OrdersService {
     this.orders.set(order.id, order);
     this.orderItems.set(order.id, items);
 
+    const payment = this.paymentsService.initiate(order);
     const shipment = this.courierService.createShipment(order, district, 'steadfast');
+    this.logger.log(`Checkout created order ${order.id} with shipment ${shipment.id}`);
 
     return {
       order,
       items,
+      payment,
       shipment,
       redirectUrl: dto.payment_method === 'cod' ? null : 'https://sandbox.sslcommerz.com/gwprocess/v4',
     };

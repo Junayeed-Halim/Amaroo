@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { randomInt, randomUUID } from 'crypto';
 import { compare, hash } from 'bcrypt';
 import { sign, verify } from 'jsonwebtoken';
@@ -15,6 +15,7 @@ const REFRESH_TOKEN_EXPIRY = '30d';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   private readonly users = new Map<string, UserEntity>();
   private readonly otpStore = new Map<string, { otp: string; expiresAt: number }>();
   private readonly otpRateLimit = new Map<string, number[]>();
@@ -29,6 +30,9 @@ export class AuthService {
   }
 
   async register(dto: RegisterDto) {
+    if (this.users.has(dto.phone)) {
+      throw new BadRequestException('Account already exists for this phone number');
+    }
     const now = new Date().toISOString();
     const user: UserEntity = {
       id: randomUUID(),
@@ -46,8 +50,9 @@ export class AuthService {
 
     this.users.set(user.phone, user);
 
+    this.logger.log(`Registered buyer account ${user.id}`);
     return {
-      user,
+      user: this.sanitizeUser(user),
       accessToken: this.generateToken(user.id, user.role, ACCESS_TOKEN_EXPIRY),
       refreshToken: this.generateToken(user.id, user.role, REFRESH_TOKEN_EXPIRY),
     };
@@ -62,7 +67,7 @@ export class AuthService {
     return {
       accessToken: this.generateToken(user.id, user.role, ACCESS_TOKEN_EXPIRY),
       refreshToken: this.generateToken(user.id, user.role, REFRESH_TOKEN_EXPIRY),
-      user,
+      user: this.sanitizeUser(user),
     };
   }
 
@@ -77,6 +82,7 @@ export class AuthService {
     history.push(now);
     this.otpRateLimit.set(dto.phone, history);
     this.otpStore.set(dto.phone, { otp, expiresAt: now + OTP_TTL_MS });
+    this.logger.log(`Issued OTP for ${dto.phone}`);
 
     return { phone: dto.phone, otpExpiresInSeconds: 300 };
   }
@@ -91,6 +97,7 @@ export class AuthService {
     const user = this.users.get(dto.phone);
     if (user) {
       user.isVerified = true;
+      this.logger.log(`Phone verification completed for ${user.id}`);
     }
 
     return { verified: true };
@@ -115,14 +122,16 @@ export class AuthService {
   }
 
   me(phone: string) {
-    return this.users.get(phone) ?? null;
+    const user = this.users.get(phone);
+    return user ? this.sanitizeUser(user) : null;
   }
 
   meFromAccessToken(accessToken: string) {
     try {
       const token = accessToken.replace(/^Bearer\s+/i, '');
       const payload = verify(token, this.jwtSecret) as { sub: string };
-      return [...this.users.values()].find((user) => user.id === payload.sub) ?? null;
+      const user = [...this.users.values()].find((value) => value.id === payload.sub) ?? null;
+      return user ? this.sanitizeUser(user) : null;
     } catch {
       throw new UnauthorizedException('Invalid access token');
     }
@@ -134,5 +143,10 @@ export class AuthService {
 
   private hashPassword(password: string) {
     return hash(password, 12);
+  }
+
+  private sanitizeUser(user: UserEntity) {
+    const { passwordHash: _passwordHash, ...safeUser } = user;
+    return safeUser;
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { ProductEntity } from '../database/entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -6,6 +6,7 @@ import { ListProductsQueryDto } from './dto/list-products-query.dto';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
   private readonly products = new Map<string, ProductEntity>();
 
   list(query: ListProductsQueryDto) {
@@ -68,6 +69,9 @@ export class ProductsService {
   }
 
   create(dto: CreateProductDto) {
+    if (dto.salePrice !== undefined && dto.salePrice > dto.basePrice) {
+      throw new BadRequestException('salePrice cannot be greater than basePrice');
+    }
     const now = new Date().toISOString();
     const slug = this.ensureUniqueSlug(this.slugify(dto.nameEn));
     const product: ProductEntity = {
@@ -92,11 +96,17 @@ export class ProductsService {
     };
 
     this.products.set(product.id, product);
+    this.logger.log(`Product created ${product.id} (${product.slug})`);
     return product;
   }
 
   update(id: string, dto: Partial<CreateProductDto>) {
     const product = this.getById(id);
+    const nextBasePrice = dto.basePrice ?? product.basePrice;
+    const nextSalePrice = dto.salePrice ?? product.salePrice;
+    if (nextSalePrice !== null && nextSalePrice !== undefined && nextSalePrice > nextBasePrice) {
+      throw new BadRequestException('salePrice cannot be greater than basePrice');
+    }
 
     if (dto.nameEn) {
       product.slug = this.ensureUniqueSlug(this.slugify(dto.nameEn), id);
@@ -119,12 +129,14 @@ export class ProductsService {
     });
 
     this.products.set(id, product);
+    this.logger.log(`Product updated ${id}`);
     return product;
   }
 
   remove(id: string) {
     this.getById(id);
     this.products.delete(id);
+    this.logger.log(`Product removed ${id}`);
     return { deleted: true };
   }
 
