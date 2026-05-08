@@ -35,7 +35,7 @@ export function Header() {
 
           <div className="flex flex-1 items-center gap-3 lg:max-w-3xl">
             <div className="flex flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-inner shadow-slate-100">
-              <span className="mr-3 text-slate-400">⌕</span>
+              <span aria-hidden="true" className="mr-3 text-slate-400">⌕</span>
               <input
                 aria-label={t.header.searchPlaceholder}
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"

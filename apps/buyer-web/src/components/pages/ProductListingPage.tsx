@@ -22,7 +22,7 @@ export function ProductListingPage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-        <aside className="space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.28)] h-fit lg:sticky lg:top-36">
+        <aside className="h-fit space-y-5 rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.28)] lg:sticky lg:top-36">
           {Object.entries(filters).map(([section, items]) => (
             <div key={section} className="space-y-4 border-b border-slate-100 pb-5 last:border-b-0 last:pb-0">
               <p className="text-sm font-bold uppercase tracking-[0.24em] text-slate-500">{section}</p>

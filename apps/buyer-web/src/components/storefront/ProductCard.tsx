@@ -51,7 +51,7 @@ export function ProductCard({
         </p>
         <div className="mt-4 space-y-2 text-sm text-slate-600">
           <p>{product.delivery}</p>
-          <p>{product.eta} delivery · {product.stock}</p>
+          <p>{product.eta} delivery, {product.stock}</p>
         </div>
         <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-semibold text-slate-700">
           <span>{product.seller}</span>

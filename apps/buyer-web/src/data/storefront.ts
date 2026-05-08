@@ -371,7 +371,7 @@ export const translations = {
   bn: {
     brand: "Amaroo BN",
     nav: {
-      home: "Hom",
+      home: "Home",
       shop: "Shop",
       deals: "Offer",
       account: "Account",
