@@ -8,8 +8,12 @@ import { ListProductsQueryDto } from './dto/list-products-query.dto';
 export class ProductsService {
   private readonly products = new Map<string, ProductEntity>();
 
+  constructor() {
+    this.seedInitialProducts();
+  }
+
   list(query: ListProductsQueryDto) {
-    let values = [...this.products.values()];
+    let values = [...this.products.values()].filter((product) => product.deletedAt === null);
 
     if (query.category) {
       values = values.filter((product) => product.categoryId === query.category);
@@ -50,7 +54,7 @@ export class ProductsService {
   }
 
   getBySlug(slug: string) {
-    const product = [...this.products.values()].find((value) => value.slug === slug);
+    const product = [...this.products.values()].find((value) => value.slug === slug && value.deletedAt === null);
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -60,7 +64,7 @@ export class ProductsService {
 
   getById(id: string) {
     const product = this.products.get(id);
-    if (!product) {
+    if (!product || product.deletedAt) {
       throw new NotFoundException('Product not found');
     }
 
@@ -89,6 +93,7 @@ export class ProductsService {
       viewsCount: 0,
       salesCount: 0,
       createdAt: now,
+      deletedAt: null,
     };
 
     this.products.set(product.id, product);
@@ -123,9 +128,31 @@ export class ProductsService {
   }
 
   remove(id: string) {
-    this.getById(id);
-    this.products.delete(id);
+    const product = this.getById(id);
+    product.deletedAt = new Date().toISOString();
+    product.status = 'paused';
+    this.products.set(id, product);
     return { deleted: true };
+  }
+
+  featured() {
+    return [...this.products.values()].filter((product) => product.deletedAt === null && product.isFeatured);
+  }
+
+  byCategory(categorySlug: string) {
+    return [...this.products.values()].filter(
+      (product) => product.deletedAt === null && this.slugify(product.categoryId) === this.slugify(categorySlug),
+    );
+  }
+
+  search(query: ListProductsQueryDto & { q?: string }) {
+    const q = query.q?.trim().toLowerCase();
+    let values = this.list(query);
+    if (q) {
+      values = values.filter((product) => `${product.nameEn} ${product.nameBn ?? ''}`.toLowerCase().includes(q));
+    }
+
+    return values;
   }
 
   private slugify(value: string) {
@@ -152,5 +179,78 @@ export class ProductsService {
     }
 
     return `${baseSlug}-${suffix}`;
+  }
+
+  private seedInitialProducts() {
+    const now = new Date().toISOString();
+    const initial: ProductEntity[] = [
+      {
+        id: randomUUID(),
+        sellerId: 'seed-seller-1',
+        categoryId: 'electronics',
+        nameEn: 'Walton Inverter AC 1.5 Ton',
+        nameBn: 'ওয়ালটন ইনভার্টার এসি ১.৫ টন',
+        slug: 'walton-inverter-ac-1-5-ton',
+        descriptionEn: 'Bangladesh-ready inverter AC with official warranty.',
+        descriptionBn: 'বাংলাদেশের আবহাওয়ার উপযোগী ইনভার্টার এসি।',
+        basePrice: 69990,
+        salePrice: 62990,
+        stockQuantity: 12,
+        sku: 'WAL-AC-15T',
+        weightGrams: 38500,
+        status: 'active',
+        isFeatured: true,
+        viewsCount: 0,
+        salesCount: 0,
+        createdAt: now,
+        deletedAt: null,
+      },
+      {
+        id: randomUUID(),
+        sellerId: 'seed-seller-2',
+        categoryId: 'electronics',
+        nameEn: 'Samsung Galaxy A55 5G',
+        nameBn: 'স্যামসাং গ্যালাক্সি A55 5G',
+        slug: 'samsung-galaxy-a55-5g',
+        descriptionEn: 'Official Samsung handset with VAT invoice.',
+        descriptionBn: 'অফিশিয়াল ভ্যাট ইনভয়েসসহ স্যামসাং ফোন।',
+        basePrice: 59999,
+        salePrice: 54999,
+        stockQuantity: 24,
+        sku: 'SAM-A55-5G',
+        weightGrams: 213,
+        status: 'active',
+        isFeatured: true,
+        viewsCount: 0,
+        salesCount: 0,
+        createdAt: now,
+        deletedAt: null,
+      },
+      {
+        id: randomUUID(),
+        sellerId: 'seed-seller-3',
+        categoryId: 'home-living',
+        nameEn: 'Luxury Cotton Bed Sheet Set',
+        nameBn: 'লাক্সারি কটন বেডশিট সেট',
+        slug: 'luxury-cotton-bed-sheet-set',
+        descriptionEn: 'Premium cotton bed sheet set for all seasons.',
+        descriptionBn: 'সব মৌসুমের জন্য প্রিমিয়াম কটন বেডশিট।',
+        basePrice: 3990,
+        salePrice: 3250,
+        stockQuantity: 80,
+        sku: 'BED-COT-SET',
+        weightGrams: 990,
+        status: 'active',
+        isFeatured: false,
+        viewsCount: 0,
+        salesCount: 0,
+        createdAt: now,
+        deletedAt: null,
+      },
+    ];
+
+    initial.forEach((product) => {
+      this.products.set(product.id, product);
+    });
   }
 }

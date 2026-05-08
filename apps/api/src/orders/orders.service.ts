@@ -6,6 +6,7 @@ import { OrderEntity } from '../database/entities/order.entity';
 import { CourierService } from '../courier/courier.service';
 import { ProductsService } from '../products/products.service';
 import { CheckoutDto } from './dto/checkout.dto';
+import { CreateAddressDto } from './dto/create-address.dto';
 
 @Injectable()
 export class OrdersService {
@@ -17,6 +18,37 @@ export class OrdersService {
     private readonly productsService: ProductsService,
     private readonly courierService: CourierService,
   ) {}
+
+  createAddress(dto: CreateAddressDto) {
+    const address: AddressEntity = {
+      id: randomUUID(),
+      userId: dto.user_id,
+      label: dto.label ?? 'Home',
+      recipientName: dto.recipient_name,
+      phone: dto.phone,
+      division: dto.division,
+      district: dto.district,
+      upazila: dto.upazila,
+      streetAddress: dto.street_address,
+      postalCode: dto.postal_code ?? null,
+      isDefault: dto.is_default ?? false,
+    };
+
+    if (address.isDefault) {
+      [...this.addresses.values()]
+        .filter((existing) => existing.userId === address.userId)
+        .forEach((existing) => {
+          existing.isDefault = false;
+        });
+    }
+
+    this.addresses.set(address.id, address);
+    return address;
+  }
+
+  listAddresses(userId: string) {
+    return [...this.addresses.values()].filter((address) => address.userId === userId);
+  }
 
   checkout(dto: CheckoutDto) {
     const address = this.addresses.get(dto.delivery_address_id);
@@ -100,6 +132,39 @@ export class OrdersService {
     return {
       ...order,
       items: this.orderItems.get(id) ?? [],
+      shipment: this.courierService.getShipmentByOrderId(id),
     };
+  }
+
+  listOrders(buyerId: string) {
+    return [...this.orders.values()].filter((order) => order.buyerId === buyerId);
+  }
+
+  cancelOrder(id: string) {
+    const order = this.orders.get(id);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (order.status === 'shipped' || order.status === 'delivered') {
+      throw new NotFoundException('Shipped or delivered orders cannot be cancelled');
+    }
+
+    order.status = 'cancelled';
+    this.orders.set(id, order);
+    return order;
+  }
+
+  markPayment(orderId: string, status: OrderEntity['paymentStatus']) {
+    const order = this.orders.get(orderId);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    order.paymentStatus = status;
+    if (status === 'paid' && order.status === 'pending') {
+      order.status = 'confirmed';
+    }
+    this.orders.set(orderId, order);
+    return order;
   }
 }
