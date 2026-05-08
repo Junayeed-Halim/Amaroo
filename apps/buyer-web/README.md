@@ -1,12 +1,22 @@
 # Buyer Web App
 
-Next.js buyer storefront foundation for Amaroo.
+Premium Next.js buyer storefront scaffold for Amaroo, built with the App Router and Tailwind CSS.
 
-## Current scope
+## Included pages
 
-- Bangla/English language toggle on landing page
-- Trust-first layout and messaging
-- Accessibility basics (clear contrast, focus-visible states, readable spacing)
+- Home
+- Product listing
+- Product detail
+- Cart
+- Checkout
+- Account
+
+## Features
+
+- Shared Amazon-inspired header and footer
+- Bangla/English toggle UI without extra i18n dependencies
+- Mocked local storefront data only
+- Bangladesh-specific payment and shipping trust signals
 
 ## Run locally
 
