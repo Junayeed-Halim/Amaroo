@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Amaroo Orders Service
+  version: 0.1.0
+servers:
+  - url: http://localhost:4003
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+  /v1/orders:
+    get:
+      summary: Placeholder endpoint for Orders service
+      responses:
+        '200':
+          description: Placeholder response

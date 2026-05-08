@@ -1,0 +1,15 @@
+{
+  "name": "amaroo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Amaroo Bangladesh-first eCommerce monorepo scaffold",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:buyer": "npm --prefix apps/buyer-web run dev",
+    "build:buyer": "npm --prefix apps/buyer-web run build",
+    "lint:buyer": "npm --prefix apps/buyer-web run lint"
+  }
+}

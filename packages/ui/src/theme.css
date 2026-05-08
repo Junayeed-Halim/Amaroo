@@ -1,0 +1,17 @@
+:root {
+  --amaroo-bg: #f4f8f8;
+  --amaroo-surface: #ffffff;
+  --amaroo-text: #111827;
+  --amaroo-subtle: #4b5563;
+  --amaroo-brand: #0f766e;
+  --amaroo-brand-contrast: #ffffff;
+  --amaroo-border: #d1d5db;
+  --amaroo-success: #047857;
+}
+
+[data-theme="high-clarity"] {
+  --amaroo-bg: #f8fafc;
+  --amaroo-surface: #ffffff;
+  --amaroo-text: #0f172a;
+  --amaroo-subtle: #334155;
+}

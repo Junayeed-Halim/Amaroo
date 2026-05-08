@@ -1,0 +1,109 @@
+@import "tailwindcss";
+
+:root {
+  --amaroo-bg: #f4f8f8;
+  --amaroo-surface: #ffffff;
+  --amaroo-text: #111827;
+  --amaroo-subtle: #4b5563;
+  --amaroo-brand: #0f766e;
+  --amaroo-brand-contrast: #ffffff;
+  --amaroo-border: #d1d5db;
+  --amaroo-success: #047857;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, "Noto Sans Bengali", "Hind Siliguri", Arial, sans-serif;
+  color: var(--amaroo-text);
+  background: var(--amaroo-bg);
+}
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--amaroo-surface);
+  border-bottom: 1px solid var(--amaroo-border);
+}
+
+.brand {
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.lang-btn,
+.cta-btn {
+  border: 1px solid var(--amaroo-border);
+  border-radius: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: var(--amaroo-surface);
+  color: var(--amaroo-text);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lang-btn:focus-visible,
+.cta-btn:focus-visible {
+  outline: 3px solid #14b8a6;
+  outline-offset: 2px;
+}
+
+.hero {
+  max-width: 48rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--amaroo-border);
+  background: var(--amaroo-surface);
+}
+
+.badge {
+  display: inline-flex;
+  margin: 0;
+  margin-bottom: 0.75rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--amaroo-brand-contrast);
+  background: var(--amaroo-brand);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.75rem, 4vw, 2.375rem);
+  line-height: 1.2;
+}
+
+.subhead {
+  margin-top: 0.75rem;
+  color: var(--amaroo-subtle);
+  line-height: 1.6;
+}
+
+ul {
+  margin-top: 1rem;
+  margin-bottom: 1.25rem;
+  padding-left: 1.25rem;
+  line-height: 1.6;
+}
+
+li + li {
+  margin-top: 0.5rem;
+}
+
+.cta-btn {
+  background: var(--amaroo-success);
+  color: #ffffff;
+  border-color: transparent;
+}
