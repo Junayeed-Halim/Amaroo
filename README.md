@@ -1,5 +1,6 @@
 # Amaroo
 
+Amaroo aims to build the best e-commerce website experience.
 Bangladesh-first trust-building eCommerce platform scaffold.
 
 ## Monorepo structure
