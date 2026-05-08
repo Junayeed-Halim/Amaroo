@@ -35,14 +35,22 @@ export function FlashSaleTimer({ endAt }: { endAt: string }) {
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2 sm:gap-3" aria-label="Flash sale countdown timer">
+    <div
+      className="grid grid-cols-4 gap-2 sm:gap-3"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label="Flash sale countdown timer"
+    >
       {[
         { label: "Days", value: timeLeft.days },
         { label: "Hours", value: timeLeft.hours },
         { label: "Minutes", value: timeLeft.minutes },
         { label: "Seconds", value: timeLeft.seconds },
       ].map((item) => (
-        <div key={item.label} className="rounded-xl border border-white/20 bg-white/10 p-3 text-center backdrop-blur">
+        <div
+          key={item.label}
+          className="rounded-xl border border-white/20 bg-white/10 p-3 text-center backdrop-blur"
+        >
           <p className="text-xl font-black tracking-tight text-white sm:text-2xl">{String(item.value).padStart(2, "0")}</p>
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-cyan-100/80">{item.label}</p>
         </div>
