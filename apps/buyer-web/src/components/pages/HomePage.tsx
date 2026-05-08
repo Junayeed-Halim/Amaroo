@@ -2,12 +2,25 @@
 
 import Link from "next/link";
 
-import { categories, featuredProducts, trustSignals } from "@/data/storefront";
+import {
+  catalogProducts,
+  categories,
+  flashSaleEndsAt,
+  flashSaleProductIds,
+  recommendedProductIds,
+  trustSignals,
+} from "@/data/storefront";
 
 import { BadgeRow } from "@/components/storefront/BadgeRow";
+import { FlashSaleTimer } from "@/components/storefront/FlashSaleTimer";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { SectionHeading } from "@/components/storefront/SectionHeading";
 import { useStorefront } from "@/components/storefront/StorefrontProvider";
+
+const flashSaleIds = new Set<number>(flashSaleProductIds);
+const recommendedIds = new Set<number>(recommendedProductIds);
+const flashSaleProducts = catalogProducts.filter((product) => flashSaleIds.has(product.id));
+const recommendedProducts = catalogProducts.filter((product) => recommendedIds.has(product.id));
 
 export function HomePage() {
   const { t } = useStorefront();
@@ -85,7 +98,7 @@ export function HomePage() {
         <SectionHeading
           eyebrow="Curated categories"
           title={t.home.categoryTitle}
-          copy="Each section is designed like a polished marketplace shelf: easy scanning, strong hierarchy, and calm spacing."
+          copy="Browse category collections tailored for fast buyer navigation."
         />
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {categories.map((category) => (
@@ -105,55 +118,29 @@ export function HomePage() {
       </section>
 
       <section className="space-y-8">
-        <SectionHeading
-          eyebrow="Featured products"
-          title={t.home.featuredTitle}
-          copy="Amazon-inspired card density, but tuned for a premium Bangladesh storefront with cleaner breathing room."
-        />
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
+        <div className="overflow-hidden rounded-[2.25rem] bg-gradient-to-br from-teal-600 via-cyan-600 to-slate-900 p-6 text-white shadow-[0_18px_50px_-30px_rgba(8,145,178,0.6)] sm:p-8">
+          <div className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-[0.34em] text-cyan-100">Flash sale</p>
+            <h2 className="text-3xl font-black tracking-tight text-white sm:text-4xl">{t.home.flashSaleTitle}</h2>
+            <p className="max-w-3xl text-base leading-7 text-cyan-100/90">{t.home.flashSaleCopy}</p>
+          </div>
+          <div className="mt-6 max-w-md">
+            <FlashSaleTimer endAt={flashSaleEndsAt} />
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {flashSaleProducts.map((product) => (
+              <ProductCard key={product.id} product={product} compact />
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-[2.25rem] border border-slate-200 bg-white p-8 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.28)]">
-          <SectionHeading
-            eyebrow="Trust framework"
-            title={t.home.trustTitle}
-            copy="A premium buyer experience needs visible reassurance in every major decision point."
-          />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2">
-            {[
-              "Visible payment partner badges above the fold",
-              "Delivery promise blocks built for courier-heavy operations",
-              "Local language toggle without cluttering the interface",
-              "Clear pricing with discount framing and seller confidence",
-            ].map((item) => (
-              <div key={item} className="rounded-[1.75rem] bg-slate-50 p-5 text-sm leading-7 text-slate-600">
-                {item}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-[2.25rem] bg-gradient-to-br from-teal-600 via-cyan-600 to-slate-900 p-8 text-white shadow-[0_18px_50px_-30px_rgba(8,145,178,0.6)]">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-100">Promo banner</p>
-          <h2 className="mt-4 text-4xl font-black tracking-tight">{t.home.promoTitle}</h2>
-          <p className="mt-4 max-w-lg text-base leading-8 text-cyan-50">{t.home.promoCopy}</p>
-          <div className="mt-8 grid gap-3 sm:grid-cols-2">
-            {[
-              "0% EMI on selected electronics",
-              "Pathao & REDX priority routing",
-              "Wallet cashback every weekend",
-              "Premium customer support response lanes",
-            ].map((benefit) => (
-              <div key={benefit} className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 text-sm">
-                {benefit}
-              </div>
-            ))}
-          </div>
+      <section className="space-y-8">
+        <SectionHeading eyebrow="Recommended products" title={t.home.recommendedTitle} copy={t.home.recommendedCopy} />
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {recommendedProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
         </div>
       </section>
     </div>
