@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Amaroo Auth Service
+  version: 0.1.0
+servers:
+  - url: http://localhost:4001
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+  /v1/auth:
+    get:
+      summary: Placeholder endpoint for Auth service
+      responses:
+        '200':
+          description: Placeholder response

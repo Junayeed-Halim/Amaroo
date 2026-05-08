@@ -1,0 +1,19 @@
+openapi: 3.0.3
+info:
+  title: Amaroo Inventory Service
+  version: 0.1.0
+servers:
+  - url: http://localhost:4004
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+  /v1/inventory:
+    get:
+      summary: Placeholder endpoint for Inventory service
+      responses:
+        '200':
+          description: Placeholder response
