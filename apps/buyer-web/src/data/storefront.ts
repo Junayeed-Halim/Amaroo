@@ -308,6 +308,11 @@ export const accountOrders = [
 
 export const checkoutSteps = ["Shipping", "Payment", "Review"] as const;
 
+// TODO: Replace with buyer homepage API responses when backend endpoints are available.
+export const flashSaleEndsAt = "2026-12-31T23:59:59+06:00";
+export const flashSaleProductIds = [2, 5, 8] as const;
+export const recommendedProductIds = [1, 3, 4, 6, 7, 8] as const;
+
 export const translations = {
   en: {
     brand: "Amaroo",
@@ -336,12 +341,11 @@ export const translations = {
         "Discover curated electronics, fashion, home upgrades, and essentials with trusted payments, visible delivery promises, and a premium storefront experience.",
       primaryCta: "Shop best sellers",
       secondaryCta: "See today's deals",
-      categoryTitle: "Top categories for every household",
-      featuredTitle: "Featured picks buyers are adding right now",
-      trustTitle: "Why Amaroo feels dependable from the first click",
-      promoTitle: "Mega savings for Dhaka, Chattogram, and beyond",
-      promoCopy:
-        "Bank discounts, wallet cashback, and courier-tracked delivery windows — designed for Bangladesh shoppers who value certainty.",
+      categoryTitle: "Featured categories for every household",
+      flashSaleTitle: "Flash sale ending soon",
+      flashSaleCopy: "Limited-time markdowns refreshed for fast checkout decisions.",
+      recommendedTitle: "Recommended for you",
+      recommendedCopy: "Personalized picks inspired by top-performing buyer journeys.",
     },
     plp: {
       title: "Shop all products",
@@ -395,12 +399,11 @@ export const translations = {
         "Electronics, fashion, home ebong dainondin proyojoniyo ponno khujun nirapod payment o sposto delivery protishruti-r sathe.",
       primaryCta: "Best seller dekhun",
       secondaryCta: "Ajker offer dekhun",
-      categoryTitle: "Protiti poribarer jonno jonopriyo category",
-      featuredTitle: "Je ponno-gulo ekhon shobcheye beshi dekha hocche",
-      trustTitle: "Prothom click thekei keno Amaroo bhoroshar",
-      promoTitle: "Dhaka, Chattogram o saradeshe boro savings",
-      promoCopy:
-        "Bank discount, wallet cashback ebong courier-tracked delivery — Bangladeshi kretader jonno toiri.",
+      categoryTitle: "Protiti poribarer jonno featured category",
+      flashSaleTitle: "Flash sale shighroi sesh hobe",
+      flashSaleCopy: "Druto checkout-er jonno limited-time offer niyomito update kora hocche.",
+      recommendedTitle: "Apnar jonno recommend kora",
+      recommendedCopy: "Top buyer trend theke bacha personalized product selection.",
     },
     plp: {
       title: "Shob ponno dekhun",
