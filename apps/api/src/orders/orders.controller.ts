@@ -7,6 +7,18 @@ import { OrdersService } from './orders.service';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
+  /** POST /api/v1/orders/addresses — create a delivery address */
+  @Post('addresses')
+  createAddress(@Body() dto: CreateAddressDto) {
+    return this.ordersService.createAddress(dto);
+  }
+
+  /** GET /api/v1/orders/addresses?user_id=<id> — list user addresses */
+  @Get('addresses')
+  listAddresses(@Query('user_id') userId = '') {
+    return this.ordersService.listAddresses(userId);
+  }
+
   /** GET /api/v1/orders?buyer_id=<id> — list buyer orders */
   @Get()
   listOrders(@Query('buyer_id') buyerId = '') {
@@ -29,18 +41,6 @@ export class OrdersController {
   @Patch(':id/cancel')
   cancelOrder(@Param('id') id: string) {
     return this.ordersService.cancelOrder(id);
-  }
-
-  /** POST /api/v1/orders/addresses — create a delivery address */
-  @Post('addresses')
-  createAddress(@Body() dto: CreateAddressDto) {
-    return this.ordersService.createAddress(dto);
-  }
-
-  /** GET /api/v1/orders/addresses?user_id=<id> — list user addresses */
-  @Get('addresses')
-  listAddresses(@Query('user_id') userId = '') {
-    return this.ordersService.listAddresses(userId);
   }
 
   /** PATCH /api/v1/orders/:id/payment — internal: mark payment status */

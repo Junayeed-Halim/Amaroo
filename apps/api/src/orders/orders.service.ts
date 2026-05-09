@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { AddressEntity } from '../database/entities/address.entity';
 import { OrderItemEntity } from '../database/entities/order-item.entity';
@@ -146,7 +146,7 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
     if (order.status === 'shipped' || order.status === 'delivered') {
-      throw new NotFoundException('Shipped or delivered orders cannot be cancelled');
+      throw new BadRequestException('Shipped or delivered orders cannot be cancelled');
     }
 
     order.status = 'cancelled';

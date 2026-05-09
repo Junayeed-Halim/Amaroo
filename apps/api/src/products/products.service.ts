@@ -140,8 +140,9 @@ export class ProductsService {
   }
 
   byCategory(categorySlug: string) {
+    const normalizedSlug = this.slugify(categorySlug);
     return [...this.products.values()].filter(
-      (product) => product.deletedAt === null && this.slugify(product.categoryId) === this.slugify(categorySlug),
+      (product) => product.deletedAt === null && this.slugify(product.categoryId) === normalizedSlug,
     );
   }
 
