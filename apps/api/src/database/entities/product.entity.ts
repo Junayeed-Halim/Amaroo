@@ -19,4 +19,5 @@ export class ProductEntity {
   viewsCount!: number;
   salesCount!: number;
   createdAt!: string;
+  deletedAt!: string | null;
 }

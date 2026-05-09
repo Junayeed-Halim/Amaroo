@@ -7,6 +7,21 @@ import { ProductsService } from './products.service';
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Get('search')
+  search(@Query() query: ListProductsQueryDto & { q?: string }) {
+    return this.productsService.search(query);
+  }
+
+  @Get('featured')
+  featured() {
+    return this.productsService.featured();
+  }
+
+  @Get('category/:slug')
+  byCategory(@Param('slug') slug: string) {
+    return this.productsService.byCategory(slug);
+  }
+
   @Get()
   list(@Query() query: ListProductsQueryDto) {
     return this.productsService.list(query);
