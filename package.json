@@ -10,6 +10,20 @@
   "scripts": {
     "dev:buyer": "npm --prefix apps/buyer-web run dev",
     "build:buyer": "npm --prefix apps/buyer-web run build",
-    "lint:buyer": "npm --prefix apps/buyer-web run lint"
+    "lint:buyer": "npm --prefix apps/buyer-web run lint",
+    "dev:seller": "npm --prefix apps/seller-dashboard run dev",
+    "build:seller": "npm --prefix apps/seller-dashboard run build",
+    "lint:seller": "npm --prefix apps/seller-dashboard run lint",
+    "dev:admin": "npm --prefix apps/admin-panel run dev",
+    "build:admin": "npm --prefix apps/admin-panel run build",
+    "lint:admin": "npm --prefix apps/admin-panel run lint",
+    "dev:api": "npm --prefix apps/api run start:dev",
+    "build:api": "npm --prefix apps/api run build",
+    "build": "turbo run build",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "eslint": "^8",
+    "turbo": "^2.5.4"
   }
 }
