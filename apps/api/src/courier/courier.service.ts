@@ -37,6 +37,10 @@ export class CourierService {
     return consignmentIds.map((id) => this.trackShipment(id)).filter((value) => value !== null);
   }
 
+  getShipmentByOrderId(orderId: string) {
+    return [...this.shipments.values()].find((value) => value.orderId === orderId) ?? null;
+  }
+
   calculateDeliveryFee(district: string) {
     return district.toLowerCase().includes('dhaka') ? 110 : 150;
   }
