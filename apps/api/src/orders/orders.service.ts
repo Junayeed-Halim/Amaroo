@@ -36,9 +36,22 @@ export class OrdersService {
       postalCode: dto.postal_code ?? null,
       isDefault: dto.is_default ?? false,
     };
+
+    if (address.isDefault) {
+      [...this.addresses.values()]
+        .filter((existing) => existing.userId === address.userId)
+        .forEach((existing) => {
+          existing.isDefault = false;
+        });
+    }
+
     this.addresses.set(address.id, address);
     this.logger.log(`Address created ${address.id} for ${address.userId}`);
     return address;
+  }
+
+  listAddresses(userId: string) {
+    return [...this.addresses.values()].filter((address) => address.userId === userId);
   }
 
   checkout(dto: CheckoutDto) {
@@ -126,9 +139,44 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
+    const shipment = this.courierService.getShipmentByOrderId(id);
+
     return {
       ...order,
       items: this.orderItems.get(id) ?? [],
+      shipment: shipment ?? null,
     };
+  }
+
+  listOrders(buyerId: string) {
+    return [...this.orders.values()].filter((order) => order.buyerId === buyerId);
+  }
+
+  cancelOrder(id: string) {
+    const order = this.orders.get(id);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+    if (order.status === 'shipped' || order.status === 'delivered') {
+      throw new BadRequestException('Shipped or delivered orders cannot be cancelled');
+    }
+
+    order.status = 'cancelled';
+    this.orders.set(id, order);
+    return order;
+  }
+
+  markPayment(orderId: string, status: OrderEntity['paymentStatus']) {
+    const order = this.orders.get(orderId);
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    order.paymentStatus = status;
+    if (status === 'paid' && order.status === 'pending') {
+      order.status = 'confirmed';
+    }
+    this.orders.set(orderId, order);
+    return order;
   }
 }
