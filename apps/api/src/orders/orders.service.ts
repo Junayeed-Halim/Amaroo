@@ -129,10 +129,12 @@ export class OrdersService {
       throw new NotFoundException('Order not found');
     }
 
+    const shipment = this.courierService.getShipmentByOrderId(id);
+
     return {
       ...order,
       items: this.orderItems.get(id) ?? [],
-      shipment: this.courierService.getShipmentByOrderId(id),
+      shipment: shipment ?? null,
     };
   }
 
