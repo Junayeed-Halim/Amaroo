@@ -12,13 +12,36 @@ const filters = {
   price: ["Under ৳2,000", "৳2,000 - ৳10,000", "৳10,000 - ৳50,000", "Above ৳50,000"],
 };
 
-export function ProductListingPage() {
+export function ProductListingPage({ query = "" }: { query?: string }) {
   const { t } = useStorefront();
+  const normalizedQuery = query.trim().toLowerCase();
+  const displayedProducts = normalizedQuery
+    ? catalogProducts.filter((product) => {
+        const searchableText = [
+          product.name,
+          product.category,
+          product.badge,
+          product.seller,
+          product.delivery,
+          product.stock,
+          ...product.highlights,
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(normalizedQuery);
+      })
+    : catalogProducts;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
       <section className="rounded-[2.25rem] border border-slate-200 bg-white p-8 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.28)]">
         <SectionHeading eyebrow="Product listing" title={t.plp.title} copy={t.plp.subtitle} />
+        {normalizedQuery ? (
+          <p className="mt-4 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600">
+            Showing results for “{query}”
+          </p>
+        ) : null}
       </section>
 
       <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
@@ -41,7 +64,7 @@ export function ProductListingPage() {
         <section className="space-y-6">
           <div className="flex flex-col gap-4 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.28)] sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold text-slate-500">Showing {catalogProducts.length} premium mock products</p>
+              <p className="text-sm font-semibold text-slate-500">Showing {displayedProducts.length} premium mock products</p>
               <h2 className="text-2xl font-black tracking-tight text-slate-950">Filter-first catalog scaffold</h2>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -63,10 +86,16 @@ export function ProductListingPage() {
           </div>
 
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {catalogProducts.map((product) => (
+            {displayedProducts.map((product) => (
               <ProductCard key={product.id} product={product} compact />
             ))}
           </div>
+
+          {displayedProducts.length === 0 ? (
+            <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+              No products matched your search yet. Try browsing all products or use a broader keyword.
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap items-center justify-center gap-3 rounded-[2rem] border border-slate-200 bg-white p-5 shadow-[0_14px_36px_-28px_rgba(15,23,42,0.28)]">
             {['Previous', '1', '2', '3', 'Next'].map((item, index) => (

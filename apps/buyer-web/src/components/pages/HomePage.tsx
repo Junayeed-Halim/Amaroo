@@ -44,15 +44,25 @@ export function HomePage() {
               href="/products"
               className="rounded-2xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-amber-300"
             >
-              {t.home.primaryCta}
+              Browse products
             </Link>
             <Link
-              href="/checkout"
+              href="/auth/login"
               className="rounded-2xl border border-white/15 bg-white/10 px-6 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/15"
             >
-              {t.home.secondaryCta}
+              Sign in
+            </Link>
+            <Link
+              href="/auth/register"
+              className="rounded-2xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-bold text-white/90 backdrop-blur transition hover:bg-white/10"
+            >
+              Create account
             </Link>
           </div>
+
+          <p className="max-w-2xl text-sm leading-7 text-slate-400">
+            Browse freely without an account, or sign in anytime to track orders and save your details.
+          </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
             {trustSignals.promises.map((promise) => (

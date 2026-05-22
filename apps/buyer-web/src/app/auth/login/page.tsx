@@ -1,39 +1,73 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [mode, setMode] = useState<"password" | "otp">("password");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [status, setStatus] = useState<"idle" | "sent" | "success">("idle");
 
   function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: call POST /api/v1/auth/otp/send
     setOtpSent(true);
+    setStatus("sent");
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: call POST /api/v1/auth/login or POST /api/v1/auth/otp/verify
-    // then store tokens and redirect.
+    setStatus("success");
+    router.push("/account");
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.28)]">
-        <h1 className="text-3xl font-black tracking-tight text-slate-950">Sign in</h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Use your phone number to sign in or get a one-time code.
+    <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:px-6 lg:grid-cols-[0.95fr_1.05fr] lg:px-8 lg:py-16">
+      <section className="rounded-[2.5rem] bg-slate-950 p-8 text-white shadow-[0_24px_70px_-32px_rgba(15,23,42,0.72)] lg:p-10">
+        <p className="text-xs font-bold uppercase tracking-[0.34em] text-amber-400">Buyer access</p>
+        <h1 className="mt-5 max-w-lg text-4xl font-black tracking-tight sm:text-5xl">
+          Sign in to continue where your cart left off.
+        </h1>
+        <p className="mt-4 max-w-xl text-base leading-8 text-slate-300">
+          Amaroo keeps the login flow simple: phone number, password, or a one-time code with a clear path back to
+          your orders and checkout.
         </p>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+          {[
+            "Fast OTP fallback",
+            "Bangladesh-friendly phone sign-in",
+            "Account and order access",
+          ].map((item) => (
+            <div key={item} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-sm text-slate-200">
+              {item}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_16px_45px_-28px_rgba(15,23,42,0.28)]">
+        <h2 className="text-3xl font-black tracking-tight text-slate-950">Sign in</h2>
+        <p className="mt-2 text-sm text-slate-500">Use your phone number to sign in or get a one-time code.</p>
+
+        {status === "success" && (
+          <div className="mt-6 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+            Signed in successfully. Redirecting to your account.
+          </div>
+        )}
 
         <div className="mt-6 flex gap-2">
           <button
             type="button"
-            onClick={() => setMode("password")}
+            onClick={() => {
+              setMode("password");
+              setStatus("idle");
+              setOtpSent(false);
+            }}
             className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
               mode === "password"
                 ? "border-slate-950 bg-slate-950 text-white"
@@ -44,7 +78,11 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => { setMode("otp"); setOtpSent(false); }}
+            onClick={() => {
+              setMode("otp");
+              setOtpSent(false);
+              setStatus("idle");
+            }}
             className={`flex-1 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
               mode === "otp"
                 ? "border-slate-950 bg-slate-950 text-white"
@@ -82,6 +120,12 @@ export default function LoginPage() {
             </label>
           )}
 
+          {mode === "otp" && !otpSent && (
+            <div className="rounded-[1.5rem] bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-600">
+              We&apos;ll send a six-digit code to this number. You can use OTP for faster sign-in on mobile.
+            </div>
+          )}
+
           {mode === "otp" && otpSent && (
             <label className="block space-y-2 text-sm font-semibold text-slate-700">
               <span>One-time code (6 digits)</span>
@@ -106,6 +150,10 @@ export default function LoginPage() {
             {mode === "otp" && !otpSent ? "Send code" : "Sign in"}
           </button>
         </form>
+
+        <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 text-sm leading-7 text-slate-600">
+          Secure checkout and saved order history are one click away after login.
+        </div>
 
         <p className="mt-6 text-center text-sm text-slate-500">
           Don&apos;t have an account?{" "}

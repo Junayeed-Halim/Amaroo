@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 
 import { getCartSummary } from "@/lib/storefront";
 
@@ -17,8 +18,16 @@ const links = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { t, toggleLocale } = useStorefront();
   const cartSummary = getCartSummary();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+    router.push(query ? `/products?query=${encodeURIComponent(query)}` : "/products");
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
@@ -33,15 +42,23 @@ export function Header() {
             </p>
           </div>
 
-          <div className="flex flex-1 items-center gap-3 lg:max-w-3xl">
+          <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center gap-3 lg:max-w-3xl">
             <div className="flex flex-1 items-center rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 shadow-inner shadow-slate-100">
               <span aria-hidden="true" className="mr-3 text-slate-400">⌕</span>
               <input
                 aria-label={t.header.searchPlaceholder}
                 className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
                 placeholder={t.header.searchPlaceholder}
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
               />
             </div>
+            <button
+              type="submit"
+              className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            >
+              Browse
+            </button>
             <button
               type="button"
               onClick={toggleLocale}
@@ -49,7 +66,7 @@ export function Header() {
             >
               {t.header.language}
             </button>
-          </div>
+          </form>
 
           <div className="flex items-center gap-3">
             <div className="hidden rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700 xl:block">
