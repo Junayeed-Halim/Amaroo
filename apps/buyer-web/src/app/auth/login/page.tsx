@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "../../../lib/api";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,16 +14,51 @@ export default function LoginPage() {
   const [otpSent, setOtpSent] = useState(false);
   const [status, setStatus] = useState<"idle" | "sent" | "success">("idle");
 
-  function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    setOtpSent(true);
-    setStatus("sent");
+    try {
+      await apiFetch('/auth/otp/send', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setOtpSent(true);
+      setStatus('sent');
+    } catch (err: any) {
+      setStatus('idle');
+      console.error(err);
+      alert(err?.message || 'Failed to send OTP');
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("success");
-    router.push("/account");
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ phone, password }),
+      });
+      if (data?.accessToken) localStorage.setItem('accessToken', data.accessToken);
+      setStatus('success');
+      router.push('/account');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'Login failed');
+    }
+  }
+
+  async function handleVerify(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      await apiFetch('/auth/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, otp }),
+      });
+      setStatus('success');
+      router.push('/account');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'OTP verification failed');
+    }
   }
 
   return (
@@ -93,7 +129,12 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <form onSubmit={mode === "otp" && !otpSent ? handleSendOtp : handleSubmit} className="mt-6 space-y-4">
+        <form
+          onSubmit={
+            mode === 'otp' ? (otpSent ? handleVerify : handleSendOtp) : handleSubmit
+          }
+          className="mt-6 space-y-4"
+        >
           <label className="block space-y-2 text-sm font-semibold text-slate-700">
             <span>Phone number</span>
             <input

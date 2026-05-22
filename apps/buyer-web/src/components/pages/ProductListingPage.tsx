@@ -1,10 +1,22 @@
 "use client";
 
-import { catalogProducts } from "@/data/storefront";
-
+import { useEffect, useState } from "react";
 import { ProductCard } from "@/components/storefront/ProductCard";
 import { SectionHeading } from "@/components/storefront/SectionHeading";
 import { useStorefront } from "@/components/storefront/StorefrontProvider";
+import { apiFetch } from "@/lib/api";
+
+type RemoteProduct = {
+  id: string;
+  nameEn?: string;
+  nameBn?: string | null;
+  slug?: string;
+  basePrice?: number;
+  salePrice?: number | null;
+  stockQuantity?: number;
+  categoryId?: string;
+  isFeatured?: boolean;
+};
 
 const filters = {
   departments: ["Electronics", "Fashion", "Home & Living", "Beauty", "Groceries"],
@@ -14,24 +26,49 @@ const filters = {
 
 export function ProductListingPage({ query = "" }: { query?: string }) {
   const { t } = useStorefront();
-  const normalizedQuery = query.trim().toLowerCase();
-  const displayedProducts = normalizedQuery
-    ? catalogProducts.filter((product) => {
-        const searchableText = [
-          product.name,
-          product.category,
-          product.badge,
-          product.seller,
-          product.delivery,
-          product.stock,
-          ...product.highlights,
-        ]
-          .join(" ")
-          .toLowerCase();
+  const [products, setProducts] = useState<RemoteProduct[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-        return searchableText.includes(normalizedQuery);
-      })
-    : catalogProducts;
+  useEffect(() => {
+    let mounted = true;
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const q = query?.trim();
+        const path = q ? `/products/search?q=${encodeURIComponent(q)}` : `/products`;
+        const data = await apiFetch(path);
+        if (!mounted) return;
+        // Products service returns ProductEntity[] shaped differently; normalize for UI
+        setProducts(
+          (data as any[]).map((p) => ({
+            id: p.id,
+            nameEn: p.nameEn ?? (p.name as string) ?? '',
+            nameBn: p.nameBn ?? null,
+            slug: p.slug ?? undefined,
+            basePrice: p.basePrice ?? p.price ?? 0,
+            salePrice: p.salePrice ?? null,
+            stockQuantity: p.stockQuantity ?? 0,
+            categoryId: p.categoryId ?? p.category ?? undefined,
+            isFeatured: p.isFeatured ?? false,
+          })),
+        );
+      } catch (err: any) {
+        console.error(err);
+        setError(err?.message || 'Failed to load products');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+    return () => {
+      mounted = false;
+    };
+  }, [query]);
+
+  const displayedProducts = products;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">

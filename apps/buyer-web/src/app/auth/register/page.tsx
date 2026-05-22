@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { apiFetch } from "../../../lib/api";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -11,15 +12,40 @@ export default function RegisterPage() {
   const [otp, setOtp] = useState("");
   const [message, setMessage] = useState("");
 
-  function handleSendOtp(e: React.FormEvent) {
+  async function handleSendOtp(e: React.FormEvent) {
     e.preventDefault();
-    setMessage("Verification code sent to your phone.");
-    setStep("otp");
+    try {
+      const reg = await apiFetch('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(form),
+      });
+      if (reg?.accessToken) localStorage.setItem('accessToken', reg.accessToken);
+
+      await apiFetch('/auth/otp/send', {
+        method: 'POST',
+        body: JSON.stringify({ phone: form.phone }),
+      });
+
+      setMessage('Verification code sent to your phone.');
+      setStep('otp');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'Registration failed');
+    }
   }
 
-  function handleVerify(e: React.FormEvent) {
+  async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
-    router.push("/account");
+    try {
+      await apiFetch('/auth/otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone: form.phone, otp }),
+      });
+      router.push('/account');
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message || 'OTP verification failed');
+    }
   }
 
   return (
