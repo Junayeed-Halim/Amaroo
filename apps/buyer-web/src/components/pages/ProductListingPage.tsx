@@ -44,14 +44,18 @@ export function ProductListingPage({ query = "" }: { query?: string }) {
         setProducts(
           (data as any[]).map((p) => ({
             id: p.id,
-            nameEn: p.nameEn ?? (p.name as string) ?? '',
+            // map remote shape to UI-friendly product fields
+            nameEn: p.nameEn ?? p.name ?? '',
             nameBn: p.nameBn ?? null,
-            slug: p.slug ?? undefined,
+            slug: p.slug ?? String(p.id),
             basePrice: p.basePrice ?? p.price ?? 0,
             salePrice: p.salePrice ?? null,
             stockQuantity: p.stockQuantity ?? 0,
-            categoryId: p.categoryId ?? p.category ?? undefined,
+            categoryId: p.categoryId ?? p.category ?? 'Misc',
             isFeatured: p.isFeatured ?? false,
+            // UI-facing defaults
+            // keep some extra fields used by ProductCard by adding them dynamically at render
+            _raw: p,
           })),
         );
       } catch (err: any) {
@@ -68,7 +72,26 @@ export function ProductListingPage({ query = "" }: { query?: string }) {
     };
   }, [query]);
 
-  const displayedProducts = products;
+  const displayedProducts = products.map((p) => ({
+    id: typeof p.id === 'number' ? p.id : p.id,
+    slug: p.slug || String(p.id),
+    name: p.nameEn ?? p.nameBn ?? 'Product',
+    category: p.categoryId ?? 'Misc',
+    price: p.salePrice ?? p.basePrice ?? 0,
+    originalPrice: p.basePrice ?? (p.salePrice ?? 0),
+    rating: 4.5,
+    reviewCount: 10,
+    badge: p.isFeatured ? 'Featured' : '',
+    imageLabel: 'Photo',
+    accent: 'from-sky-500 via-cyan-500 to-teal-500',
+    delivery: 'Standard delivery',
+    eta: '2-3 days',
+    seller: p._raw?.seller ?? 'Partner store',
+    stock: (p.stockQuantity ?? 0) > 0 ? 'In stock' : 'Out of stock',
+    highlights: [],
+    variants: [],
+    gallery: [],
+  }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-10">
