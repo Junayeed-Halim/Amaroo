@@ -1,38 +1,42 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { ProductEntity } from '../database/entities/product.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { ListProductsQueryDto } from './dto/list-products-query.dto';
 
 @Injectable()
-export class ProductsService {
-  private readonly products = new Map<string, ProductEntity>();
+export class ProductsService implements OnModuleInit {
+  constructor(
+    @InjectRepository(ProductEntity)
+    private readonly repo: Repository<ProductEntity>,
+  ) {}
 
-  constructor() {
-    this.seedInitialProducts();
+  async onModuleInit() {
+    // Seed initial products if table empty
+    const count = await this.repo.count();
+    if (count === 0) {
+      await this.seedInitialProducts();
+    }
   }
 
-  list(query: ListProductsQueryDto) {
-    let values = [...this.products.values()].filter((product) => product.deletedAt === null);
+  async list(query: ListProductsQueryDto) {
+    const where: any = { deletedAt: null };
+    if (query.category) where.categoryId = query.category;
+    if (query.seller_id) where.sellerId = query.seller_id;
 
-    if (query.category) {
-      values = values.filter((product) => product.categoryId === query.category);
-    }
+    const items = await this.repo.find({ where });
+
+    let values = items;
 
     if (query.min_price !== undefined) {
-      values = values.filter((product) => Number(product.basePrice) >= Number(query.min_price));
+      values = values.filter((p) => Number(p.basePrice) >= Number(query.min_price));
     }
-
     if (query.max_price !== undefined) {
-      values = values.filter((product) => Number(product.basePrice) <= Number(query.max_price));
+      values = values.filter((p) => Number(p.basePrice) <= Number(query.max_price));
     }
-
     if (query.in_stock) {
-      values = values.filter((product) => product.stockQuantity > 0);
-    }
-
-    if (query.seller_id) {
-      values = values.filter((product) => product.sellerId === query.seller_id);
+      values = values.filter((p) => p.stockQuantity > 0);
     }
 
     switch (query.sort) {
@@ -53,107 +57,60 @@ export class ProductsService {
     return values;
   }
 
-  getBySlug(slug: string) {
-    const product = [...this.products.values()].find((value) => value.slug === slug && value.deletedAt === null);
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
+  async getBySlug(slug: string) {
+    const product = await this.repo.findOne({ where: { slug, deletedAt: null } });
+    if (!product) throw new NotFoundException('Product not found');
     return product;
   }
 
-  getById(id: string) {
-    const product = this.products.get(id);
-    if (!product || product.deletedAt) {
-      throw new NotFoundException('Product not found');
-    }
-
+  async getById(id: string) {
+    const product = await this.repo.findOne({ where: { id } });
+    if (!product || product.deletedAt) throw new NotFoundException('Product not found');
     return product;
   }
 
-  create(dto: CreateProductDto) {
-    const now = new Date().toISOString();
-    const slug = this.ensureUniqueSlug(this.slugify(dto.nameEn));
-    const product: ProductEntity = {
-      id: randomUUID(),
-      sellerId: dto.sellerId,
-      categoryId: dto.categoryId,
-      nameEn: dto.nameEn,
-      nameBn: dto.nameBn ?? null,
+  async create(dto: CreateProductDto) {
+    const slug = await this.ensureUniqueSlug(this.slugify(dto.nameEn));
+    const product = this.repo.create({
+      ...dto,
       slug,
-      descriptionEn: dto.descriptionEn ?? null,
-      descriptionBn: dto.descriptionBn ?? null,
-      basePrice: dto.basePrice,
-      salePrice: dto.salePrice ?? null,
-      stockQuantity: dto.stockQuantity ?? 0,
-      sku: dto.sku ?? null,
-      weightGrams: dto.weightGrams ?? null,
-      status: dto.status ?? 'draft',
-      isFeatured: dto.isFeatured ?? false,
       viewsCount: 0,
       salesCount: 0,
-      createdAt: now,
-      deletedAt: null,
-    };
-
-    this.products.set(product.id, product);
-    return product;
+      status: dto.status ?? 'draft',
+    } as any);
+    return this.repo.save(product);
   }
 
-  update(id: string, dto: Partial<CreateProductDto>) {
-    const product = this.getById(id);
-
-    if (dto.nameEn) {
-      product.slug = this.ensureUniqueSlug(this.slugify(dto.nameEn), id);
-    }
-
-    Object.assign(product, {
-      sellerId: dto.sellerId ?? product.sellerId,
-      categoryId: dto.categoryId ?? product.categoryId,
-      nameEn: dto.nameEn ?? product.nameEn,
-      nameBn: dto.nameBn ?? product.nameBn,
-      descriptionEn: dto.descriptionEn ?? product.descriptionEn,
-      descriptionBn: dto.descriptionBn ?? product.descriptionBn,
-      basePrice: dto.basePrice ?? product.basePrice,
-      salePrice: dto.salePrice ?? product.salePrice,
-      stockQuantity: dto.stockQuantity ?? product.stockQuantity,
-      sku: dto.sku ?? product.sku,
-      weightGrams: dto.weightGrams ?? product.weightGrams,
-      status: dto.status ?? product.status,
-      isFeatured: dto.isFeatured ?? product.isFeatured,
-    });
-
-    this.products.set(id, product);
-    return product;
+  async update(id: string, dto: Partial<CreateProductDto>) {
+    const product = await this.getById(id);
+    if (dto.nameEn) dto['slug'] = await this.ensureUniqueSlug(this.slugify(dto.nameEn), id);
+    Object.assign(product, dto as any);
+    return this.repo.save(product);
   }
 
-  remove(id: string) {
-    const product = this.getById(id);
+  async remove(id: string) {
+    const product = await this.getById(id);
     product.deletedAt = new Date().toISOString();
     product.status = 'paused';
-    this.products.set(id, product);
+    await this.repo.save(product);
     return { deleted: true };
   }
 
-  featured() {
-    return [...this.products.values()].filter((product) => product.deletedAt === null && product.isFeatured);
+  async featured() {
+    return this.repo.find({ where: { deletedAt: null, isFeatured: true } });
   }
 
-  byCategory(categorySlug: string) {
-    const normalizedSlug = this.slugify(categorySlug);
-    return [...this.products.values()].filter(
-      (product) => product.deletedAt === null && this.slugify(product.categoryId) === normalizedSlug,
-    );
+  async byCategory(categorySlug: string) {
+    const items = await this.repo.find({ where: { deletedAt: null } });
+    const normalized = this.slugify(categorySlug);
+    return items.filter((p) => this.slugify(String(p.categoryId)) === normalized);
   }
 
-  search(query: ListProductsQueryDto & { q?: string }) {
-    const q = query.q?.trim().toLowerCase();
-    let values = this.list(query);
-    if (q) {
-      values = values.filter((product) => `${product.nameEn} ${product.nameBn ?? ''}`.toLowerCase().includes(q));
-    }
-
-    return values;
+  async search(query: ListProductsQueryDto & { q?: string }) {
+    const q = query.q?.trim();
+    if (!q) return this.list(query);
+    const items = await this.repo.find({ where: { deletedAt: null } });
+    return items.filter((p) => (`${p.nameEn} ${p.nameBn ?? ''}`).toLowerCase().includes(q.toLowerCase()));
   }
 
   private slugify(value: string) {
@@ -165,28 +122,21 @@ export class ProductsService {
       .replace(/-+/g, '-');
   }
 
-  private ensureUniqueSlug(baseSlug: string, excludingId?: string) {
-    const existingSlugs = new Set(
-      [...this.products.values()].filter((product) => product.id !== excludingId).map((product) => product.slug),
-    );
-
-    if (!existingSlugs.has(baseSlug)) {
-      return baseSlug;
-    }
-
-    let suffix = 2;
-    while (existingSlugs.has(`${baseSlug}-${suffix}`)) {
+  private async ensureUniqueSlug(baseSlug: string, excludingId?: string) {
+    let slug = baseSlug;
+    let suffix = 1;
+    while (true) {
+      const existing = await this.repo.findOne({ where: { slug } });
+      if (!existing || (excludingId && existing.id === excludingId)) return slug;
       suffix += 1;
+      slug = `${baseSlug}-${suffix}`;
     }
-
-    return `${baseSlug}-${suffix}`;
   }
 
-  private seedInitialProducts() {
+  private async seedInitialProducts() {
     const now = new Date().toISOString();
-    const initial: ProductEntity[] = [
+    const initial: Partial<ProductEntity>[] = [
       {
-        id: randomUUID(),
         sellerId: 'seed-seller-1',
         categoryId: 'electronics',
         nameEn: 'Walton Inverter AC 1.5 Ton',
@@ -207,7 +157,6 @@ export class ProductsService {
         deletedAt: null,
       },
       {
-        id: randomUUID(),
         sellerId: 'seed-seller-2',
         categoryId: 'electronics',
         nameEn: 'Samsung Galaxy A55 5G',
@@ -228,7 +177,6 @@ export class ProductsService {
         deletedAt: null,
       },
       {
-        id: randomUUID(),
         sellerId: 'seed-seller-3',
         categoryId: 'home-living',
         nameEn: 'Luxury Cotton Bed Sheet Set',
@@ -250,8 +198,9 @@ export class ProductsService {
       },
     ];
 
-    initial.forEach((product) => {
-      this.products.set(product.id, product);
-    });
+    for (const p of initial) {
+      const entity = this.repo.create(p as any);
+      await this.repo.save(entity);
+    }
   }
 }

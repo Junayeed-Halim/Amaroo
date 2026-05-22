@@ -1,7 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { randomInt, randomUUID } from 'crypto';
+import { randomInt } from 'crypto';
 import { compare, hash } from 'bcrypt';
 import { sign, verify } from 'jsonwebtoken';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { UserEntity, UserRole } from '../database/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { OtpSendDto, OtpVerifyDto } from './dto/otp.dto';
@@ -15,23 +17,22 @@ const REFRESH_TOKEN_EXPIRY = '30d';
 
 @Injectable()
 export class AuthService {
-  private readonly users = new Map<string, UserEntity>();
   private readonly otpStore = new Map<string, { otp: string; expiresAt: number }>();
   private readonly otpRateLimit = new Map<string, number[]>();
   private readonly jwtSecret: string;
 
-  constructor() {
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly repo: Repository<UserEntity>,
+  ) {
     const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new Error('JWT_SECRET environment variable is required');
-    }
+    if (!secret) throw new Error('JWT_SECRET environment variable is required');
     this.jwtSecret = secret;
   }
 
   async register(dto: RegisterDto) {
     const now = new Date().toISOString();
-    const user: UserEntity = {
-      id: randomUUID(),
+    const user = this.repo.create({
       name: dto.name,
       phone: dto.phone,
       email: dto.email ?? null,
@@ -42,19 +43,19 @@ export class AuthService {
       isActive: true,
       createdAt: now,
       deletedAt: null,
-    };
+    } as any);
 
-    this.users.set(user.phone, user);
+    const saved = await this.repo.save(user);
 
     return {
-      user,
-      accessToken: this.generateToken(user.id, user.role, ACCESS_TOKEN_EXPIRY),
-      refreshToken: this.generateToken(user.id, user.role, REFRESH_TOKEN_EXPIRY),
+      user: saved,
+      accessToken: this.generateToken(saved.id, saved.role, ACCESS_TOKEN_EXPIRY),
+      refreshToken: this.generateToken(saved.id, saved.role, REFRESH_TOKEN_EXPIRY),
     };
   }
 
   async login(dto: LoginDto) {
-    const user = this.users.get(dto.phone);
+    const user = await this.repo.findOne({ where: { phone: dto.phone } });
     if (!user || !user.passwordHash || !(await compare(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid phone or password');
     }
@@ -81,16 +82,17 @@ export class AuthService {
     return { phone: dto.phone, otpExpiresInSeconds: 300 };
   }
 
-  verifyOtp(dto: OtpVerifyDto) {
+  async verifyOtp(dto: OtpVerifyDto) {
     const record = this.otpStore.get(dto.phone);
     if (!record || record.expiresAt < Date.now() || record.otp !== dto.otp) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
 
     this.otpStore.delete(dto.phone);
-    const user = this.users.get(dto.phone);
+    const user = await this.repo.findOne({ where: { phone: dto.phone } });
     if (user) {
       user.isVerified = true;
+      await this.repo.save(user);
     }
 
     return { verified: true };
@@ -114,15 +116,15 @@ export class AuthService {
     };
   }
 
-  me(phone: string) {
-    return this.users.get(phone) ?? null;
+  async me(phone: string) {
+    return (await this.repo.findOne({ where: { phone } })) ?? null;
   }
 
-  meFromAccessToken(accessToken: string) {
+  async meFromAccessToken(accessToken: string) {
     try {
       const token = accessToken.replace(/^Bearer\s+/i, '');
       const payload = verify(token, this.jwtSecret) as { sub: string };
-      return [...this.users.values()].find((user) => user.id === payload.sub) ?? null;
+      return (await this.repo.findOne({ where: { id: payload.sub } })) ?? null;
     } catch {
       throw new UnauthorizedException('Invalid access token');
     }

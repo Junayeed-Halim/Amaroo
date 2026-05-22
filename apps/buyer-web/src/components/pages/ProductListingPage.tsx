@@ -29,6 +29,7 @@ export function ProductListingPage({ query = "" }: { query?: string }) {
   const [products, setProducts] = useState<RemoteProduct[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const normalizedQuery = query?.trim();
 
   useEffect(() => {
     let mounted = true;

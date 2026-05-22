@@ -50,7 +50,7 @@ export class OrdersService {
     return [...this.addresses.values()].filter((address) => address.userId === userId);
   }
 
-  checkout(dto: CheckoutDto) {
+  async checkout(dto: CheckoutDto) {
     const address = this.addresses.get(dto.delivery_address_id);
     if (!address) {
       throw new NotFoundException('Delivery address not found');
@@ -58,32 +58,40 @@ export class OrdersService {
     const district = address.district;
 
     let subtotal = 0;
-    const items: OrderItemEntity[] = dto.items.map((item) => {
-      const product = this.productsService.getById(item.product_id);
+    const items: OrderItemEntity[] = dto.items.map((item) => ({
+      id: randomUUID(),
+      orderId: '',
+      productId: item.product_id,
+      variantId: item.variant_id ?? null,
+      sellerId: '',
+      quantity: item.qty,
+      unitPrice: 0,
+      totalPrice: 0,
+      commissionAmount: 0,
+      sellerEarning: 0,
+    } as OrderItemEntity));
 
-      if (product.stockQuantity < item.qty) {
+    // fetch product details and compute prices
+    for (const item of items) {
+      const product = await this.productsService.getById(item.productId);
+
+      if (product.stockQuantity < item.quantity) {
         throw new NotFoundException(`Insufficient stock for product ${product.id}`);
       }
 
       // Note: replace with DB transaction + row-level locking in TypeORM for production.
-      product.stockQuantity -= item.qty;
+      product.stockQuantity -= item.quantity;
+      await (this.productsService as any).update(product.id, { stockQuantity: product.stockQuantity });
+
       const unitPrice = Number(product.salePrice ?? product.basePrice);
-      const totalPrice = unitPrice * item.qty;
+      const totalPrice = unitPrice * item.quantity;
       subtotal += totalPrice;
 
-      return {
-        id: randomUUID(),
-        orderId: '',
-        productId: product.id,
-        variantId: item.variant_id ?? null,
-        sellerId: product.sellerId,
-        quantity: item.qty,
-        unitPrice,
-        totalPrice,
-        commissionAmount: 0,
-        sellerEarning: totalPrice,
-      };
-    });
+      item.sellerId = product.sellerId;
+      item.unitPrice = unitPrice;
+      item.totalPrice = totalPrice;
+      item.sellerEarning = totalPrice;
+    }
 
     const deliveryFee = this.courierService.calculateDeliveryFee(district);
     const discountAmount = dto.coupon_code ? Math.min(subtotal * 0.1, 200) : 0;
